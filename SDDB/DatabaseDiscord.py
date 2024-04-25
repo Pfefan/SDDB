@@ -143,7 +143,7 @@ class DBMS:
 				master_table = t
 		if table == None:
 			raise NameError("Table with name does not exist")
-		for record in await master_table.history(limit=1024).flatten():
+		for record in [record async for record in master_table.history(limit=1024)]:
 			if record.content.split(chr(0x2502))[0].lower() == table.name.lower():
 				await record.delete()
 				break
@@ -166,7 +166,7 @@ class DBMS:
 		header_row = None
 		for t in self.ad.channels:
 			if t.name.lower() == self.ad.name.lower():
-				mt_records = await t.history(limit=1024).flatten()
+				mt_records = [record async for record in t.history(limit=1024)]
 				for record in mt_records:
 					if name.lower() == record.content.split(chr(0x2502))[0]:
 						headers = self.build_table_headers(record)
@@ -186,7 +186,7 @@ class DBMS:
 			if self.violates_datatype_rules(new_col[1]):
 				raise TypeError("Malformed alter; illegal datatype")
 			await header_row.edit(content=header_row.content + new_col[0] + " " + new_col[1] + chr(0x2502))
-			for row in await table.history(limit=1024).flatten():
+			for row in [row async for row in table.history(limit=1024)]:
 				await row.edit(content=row.content + "" + chr(0x2502))
 			successful = True
 
@@ -204,7 +204,7 @@ class DBMS:
 						if x-1 != i:
 							rebuilt_header += fractured_header[x] + chr(0x2502)
 					await header_row.edit(content=rebuilt_header[:-1])
-					for row in await table.history(limit=1024).flatten():
+					for row in [row async for row in table.history(limit=1024)]:
 						fractured_row = row.content.split(chr(0x2502))
 						rebuilt_row = ""
 						for x in range(len(fractured_row)):
@@ -276,7 +276,7 @@ class DBMS:
 		table = None
 		for t in self.ad.channels:
 			if t.name.lower() == self.ad.name.lower():
-				mt_records = await t.history(limit=1024).flatten()
+				mt_records = [record async for record in t.history(limit=1024)]
 				for record in mt_records:
 					if against.lower() == record.content.split(chr(0x2502))[0]:
 						headers = self.build_table_headers(record)
@@ -307,7 +307,7 @@ class DBMS:
 					self.change_ad_pointer(adstore)
 				raise Exception("Malformed query; selected columns not in table headers," + invalid_selected)
 
-		rawrows = await table.history(limit=1024).flatten()
+		rawrows = [row async for row in table.history(limit=1024)]
 		full_table = Table(against, headers, rawrows)
 		match_table = Table(against, headers)
 		clauses = self.parse_where(where)
@@ -351,7 +351,7 @@ class DBMS:
 		headers = None
 		for t in self.ad.channels:
 			if t.name.lower() == self.ad.name.lower():
-				mt_records = await t.history(limit=1024).flatten()
+				mt_records = [record async for record in t.history(limit=1024)]
 				for record in mt_records:
 					if against.lower() == record.content.split(chr(0x2502))[0].lower():
 						headers = self.build_table_headers(record)
@@ -367,7 +367,8 @@ class DBMS:
 			if adstore is not None:
 				self.change_ad_pointer(adstore)
 			raise Exception("Number of columns exceeds table definition")
-		if len(await table.history(limit=1024).flatten()) == 1024:
+		table_history_records = [record async for record in table.history(limit=1024)]
+		if len(table_history_records) == 1024:
 			if adstore is not None:
 				self.change_ad_pointer(adstore)
 			raise Exception("Maximum number of records reached; 1024")
@@ -406,7 +407,7 @@ class DBMS:
 		headers = None
 		for t in self.ad.channels:
 			if t.name.lower() == self.ad.name.lower():
-				mt_records = await t.history(limit=1024).flatten()
+				mt_records = [record async for record in t.history(limit=1024)]
 				for record in mt_records:
 					if against.lower() == record.content.split(chr(0x2502))[0]:
 						headers = self.build_table_headers(record)
@@ -423,7 +424,7 @@ class DBMS:
 			raise Exception("Number of columns exceeds table definition")
 
 		# generate row objects from raw
-		raw_rows = await table.history(limit=1024).flatten()
+		raw_rows = [row async for row in table.history(limit=1024)]
 		rows = []
 		for raw in raw_rows:
 			tr = TableRow(headers)
@@ -476,7 +477,7 @@ class DBMS:
 		headers = None
 		for t in self.ad.channels:
 			if t.name.lower() == self.ad.name.lower():
-				mt_records = await t.history(limit=1024).flatten()
+				mt_records = [record async for record in t.history(limit=1024)]
 				for record in mt_records:
 					if against.lower() == record.content.split(chr(0x2502))[0]:
 						headers = self.build_table_headers(record)
@@ -489,7 +490,7 @@ class DBMS:
 			raise NameError("No table with name: " + against)
 
 		# generate row objects from raw
-		raw_rows = await table.history(limit=1024).flatten()
+		raw_rows = [row async for row in table.history(limit=1024)]
 		rows = []
 		for raw in raw_rows:
 			tr = TableRow(headers)
@@ -729,7 +730,7 @@ class DBMS:
 						return True
 					return False
 				if clause.optype == OPTYPE.GREATEREQ:
-					if row.records[i].data >= rclause.value:
+					if row.records[i].data >= clause.value:
 						return True
 					return False
 
@@ -864,7 +865,7 @@ class TableHeader:
 			pass
 		self.is_primary_key = pk
 
-	def __str__():
+	def __str__(self):
 		return self.column_name + " " + self.datatype
 
 class Table:
@@ -961,5 +962,5 @@ class TableRecord:
 		elif datatype == "date":
 			self.data = datetime.strptime(data)
 
-	def __str__():
+	def __str__(self):
 		return str(self.data)
