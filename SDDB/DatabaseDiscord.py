@@ -938,7 +938,7 @@ class TableRow:
 			raise TypeError("index must be an int")
 		if index > len(self.headers) or index < 0:
 			raise IndexError("index out of bounds")
-		self.records[index] = TableRecord(self.headers[index], data.strip())
+		self.records[index] = TableRecord(self.headers[index], data.strip() if type(data) == str else data)
 
 	def writable(self):
 		"""String of TableRow excluding id for writing to the database"""
